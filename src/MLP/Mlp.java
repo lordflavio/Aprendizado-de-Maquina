@@ -8,9 +8,6 @@ public class Mlp {
 	double[][] inputValidate; /* base de validação */
 	double[] outputValidate; /* saida da base validação */
 	
-	double[][] inputTeste; /* base de teste */
-	double[] outputTeste; /* saida da base de teste */
-	
 	int hiddenNeurons; /* Quantidade de neuronios escondidos */
 	double learning; /* taxa de aprendisado  */
 	
@@ -22,20 +19,18 @@ public class Mlp {
 	
 	double[] erroValidate; /* Erro  de Validação */
 	
+	
 	/* Metodo Construtor */
-	public Mlp(double[][] input, double[] output, double[][] inputValidate,double[] outputValidate, 
-			   double[][] inputTeste, double[] outputTeste, int hiddenNeurons, double learning ) {
+	public Mlp(double[][] input, double[] output, double[][] inputValidate,double[] outputValidate, int hiddenNeurons, double learning ) {
 		
 		this.input = input;
 		this.output = output;
 		this.inputValidate = inputValidate;
 		this.outputValidate = outputValidate;
-		this.inputTeste = inputTeste;
-		this.outputTeste = outputTeste;
+
 		this.hiddenNeurons = hiddenNeurons;
 		this.learning = learning;
-		
-		
+
 		inputWeights = generateWeights(this.input[0].length, this.hiddenNeurons);
 		outputWeights = generateWeights(this.hiddenNeurons, 1);
 		
@@ -48,6 +43,8 @@ public class Mlp {
 		//biasInputWeights = new double[hiddenNeurons];
 		//biasOuputWeights = new double[1];
 		
+//		this.generateMlp(inputTeste, outputTeste);
+		
 	}
 	
 	/* Metodo de Treino */
@@ -55,7 +52,7 @@ public class Mlp {
 		
 		this.erroValidate = new double[epoca];
 		
-		double[] net = new double[epoca];
+		double[] net = new double[this.hiddenNeurons];
 		double netOut = 0;
 		
 		double erro = 0;
@@ -78,7 +75,7 @@ public class Mlp {
 					
 						net[j] += this.biasInputWeights[j];
 															
-						net[j] = 1/(1+Math.exp(-net[j])); 
+						net[j] = sigmoid(net[j]);
 				}
 				
 				
@@ -90,15 +87,16 @@ public class Mlp {
 				
 				netOut += this.biasOuputWeights[0];
 				
-				netOut = 1/(1+Math.exp(-netOut));
+				netOut = sigmoid(netOut);
 				
+			//	System.out.println("Saida desejada: =>"+this.output[i] +" | Saida Obtida =>" + netOut);
 				
 				erro = (this.output[i] - netOut);
 				
 				erroTotal[n] += Math.pow(erro, 2);
 				
 				
-				gradientOut = (erro * netOut) * (1 - netOut); /*calculo do gradiente do neurônio de saida */
+				gradientOut = erro * netOut * (1 - netOut); /*calculo do gradiente do neurônio de saida */
 				
 				for (int j = 0; j < gradients.length; j++) { /*calculo do gradiente dos neurônio escondidos */
 					gradients[j] = this.outputWeights[j][0] * gradientOut;
@@ -137,13 +135,14 @@ public class Mlp {
 					gradients[j] = 0;
 				}
 
+				//System.out.println("------------------------------------------------------------");
 
 			}
 			
 			
 			this.erroValidate[n] = this.validate(this.inputValidate, this.outputValidate);
 			
-			erroTotal[n] = erroTotal[n]/this.input.length;
+			erroTotal[n] = erroTotal[n] / this.input.length;
 			
 		}
 		
@@ -162,12 +161,12 @@ public class Mlp {
 		for (int i = 0; i < inputValidate.length; i++) {
 			for (int j = 0; j < this.hiddenNeurons; j++) {
 				for (int k = 0; k < inputValidate[0].length; k++) {
-					net[j] +=  this.inputWeights[k][j] * this.input[i][k];
+					net[j] +=  this.inputWeights[k][j] * inputValidate[i][k];
 				}
 				
 				net[j] += this.biasInputWeights[j];
 				
-				net[j] = 1/(1+Math.exp(-net[j]));
+				net[j] = sigmoid(net[j]);
 			}
 			
 			for (int j = 0; j < this.hiddenNeurons; j++) {  
@@ -176,7 +175,7 @@ public class Mlp {
 			
 			netOut += this.biasOuputWeights[0];	 
 			
-			netOut = 1/(1+Math.exp(-netOut));
+			netOut = sigmoid(netOut);
 			
 			erro = (outputValidate[i] - netOut);
 			
@@ -195,8 +194,53 @@ public class Mlp {
 	
 	/* Metodo para faze de testes e previsão da rede */
 	
-	public double[][] generateMlp (){
-		return null;
+	public double[] generateMlp (double[][] inputTest, double[] outputTest){
+		
+		double[] result = new double[inputTest.length];
+		
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		double erro = 0;
+        double erroTotal = 0;  
+		double[] gradients = new double[this.hiddenNeurons]; 
+		double gradientOut = 0;
+		
+		for (int i = 0; i < inputTest.length; i++) {
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				for (int k = 0; k < inputTest[0].length; k++) {
+					net[j] +=  this.inputWeights[k][j] * inputTest[i][k];
+				}
+				
+				net[j] += this.biasInputWeights[j];
+				
+				net[j] = sigmoid(net[j]);
+			}
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {  
+				netOut += this.outputWeights[j][0] * net[j];
+			}
+			
+			netOut += this.biasOuputWeights[0];	 
+			
+			netOut = sigmoid(netOut);
+			
+			result[i] = netOut;
+			
+			erro = (outputTest[i] - netOut);
+			
+			erroTotal += Math.pow(erro, 2);
+			
+			
+			
+			netOut = 0;
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				net[j] = 0;
+			}
+			
+		}
+		
+		return result;
 	}
 	
 	/* Gegar pesos aleatorios para arrays[][] */
@@ -222,9 +266,12 @@ public class Mlp {
 		
 		return weights;
 	}
+	
+	public double sigmoid (double value) {
+		return 1/( 1 + Math.exp(-value));
+	}
 
 	public double[] getErroValidate() {
 		return erroValidate;
 	}
-	
 }
