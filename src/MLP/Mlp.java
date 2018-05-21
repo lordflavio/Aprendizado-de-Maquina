@@ -17,6 +17,8 @@ public class Mlp {
 	double[] biasInputWeights; /* peso do bias */
 	double[] biasOuputWeights; /* peso saida bias */
 	
+	
+	
 	double[] erroValidate; /* Erro  de Validação */
 	
 	
