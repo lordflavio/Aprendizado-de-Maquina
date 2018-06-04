@@ -28,34 +28,43 @@ public class Main {
 		double[][] baseTest = {{0,0},{0,1},{1,0},{1,1}};
 		double[] baseOutTest = {0,1,1,0};
 	
-		int epoca = 2000;
+		int epooc = 2000;
 		
-		Mlp mlp = new Mlp(baseInput, baseOutput, baseValidate, baseOutValidate,3, 0.8);
-		  
-		double erro[] = mlp.train(epoca);
-		double[] result = mlp.generateMlp(baseTest, baseOutTest);
-		double[] erroValidate = mlp.getErroValidate();
 		
-		for (int i = 0; i < result.length; i++) {
-			System.out.println("Saidas Desejadas => "+baseOutTest[i]+" Saidas => "+ result[i]);
-		}
 		
-		Plot2DPanel plot = new Plot2DPanel();
-		double x[] = new double[epoca];
-		for (int i = 0; i < erro.length; i++) {
-			x[i]=i;
-		}
+		MLP_PSO p = new MLP_PSO(baseInput, baseOutput, baseValidate, baseOutValidate, 2, 0.5, 50);
 		
-		plot.addLinePlot("Treino", x,erro);
-		plot.addLinePlot("Validação", x,erroValidate);
-		 JFrame frame = new JFrame("Plot");
-		  frame.setContentPane(plot);
-		  frame.setSize(300, 300);
-		  
-		  frame.setVisible(true);
+		p.start(epooc);
+		p.test(baseTest, baseOutTest);
 		
-
-
+		
+		
+//		Mlp mlp = new Mlp(baseInput, baseOutput, baseValidate, baseOutValidate,3, 0.8);
+//		  
+//		double erro[] = mlp.train(epoca);
+//		double[] result = mlp.generateMlp(baseTest, baseOutTest);
+//		double[] erroValidate = mlp.getErroValidate();
+//		
+//		for (int i = 0; i < result.length; i++) {
+//			System.out.println("Saidas Desejadas => "+baseOutTest[i]+" Saidas => "+ result[i]);
+//		}
+//		
+//		Plot2DPanel plot = new Plot2DPanel();
+//		double x[] = new double[epoca];
+//		for (int i = 0; i < erro.length; i++) {
+//			x[i]=i;
+//		}
+//		
+//		plot.addLinePlot("Treino", x,erro);
+//		plot.addLinePlot("Validação", x,erroValidate);
+//		 JFrame frame = new JFrame("Plot");
+//		  frame.setContentPane(plot);
+//		  frame.setSize(300, 300);
+//		  
+//		  frame.setVisible(true);
+//		
+//
+//
 	}
 
 }
