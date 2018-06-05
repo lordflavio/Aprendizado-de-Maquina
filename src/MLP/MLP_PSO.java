@@ -14,14 +14,17 @@ public class MLP_PSO {
 	
 	double[] erroValidate; /* Erro  de Validação */
 	
-	double[][] population; /* População */
-	double[][] velocity;   /* Velocidade de ajuste */
-	double[] fitness;      /* Erro quadratico medio*/
-	double[][] pBest;      /* Memoria anterior */
-	double[] gBest;        /* melhor particula*/                                                 
+	double[][] particle;		 /* População */
+	double[][] velocity;   		/* Velocidade de ajuste */
+	double[] particleFitness;      /* Erro quadratico medio*/
+	double[][] pBest;      		/* Memoria anterior */
+	double[] pBestFitness;
+	double[] gBest;        			/* melhor particula*/
+	double[] gBestFitness;
+	double c1,c2;
 
 	public MLP_PSO(double[][] input, double[] output, double[][] inputValidate, double[] outputValidate,
-			int hiddenNeurons, double learning, int populationSize) {
+			int hiddenNeurons, double learning, int populationSize, double c1, double c2) {
 		super();
 		this.input = input;
 		this.output = output;
@@ -29,14 +32,18 @@ public class MLP_PSO {
 		this.outputValidate = outputValidate;
 		this.hiddenNeurons = hiddenNeurons;
 		this.learning = learning;
+		this.c1 = c1;
+		this.c2 = c2;
+		
 		
 		int weights = input[0].length * hiddenNeurons + 2 * hiddenNeurons + 1;
 		
-		this.population = new double[populationSize][weights];
+		this.particle = new double[populationSize][weights];
 		this.velocity = new double[populationSize][weights];
 		this.pBest = new double[populationSize][ weights];
 		this.gBest = new double[weights];
-		this.fitness = new double[populationSize];
+		this.particleFitness = new double[populationSize];
+		this.pBestFitness = new double[populationSize];
 		
 		this.generatePopulation();
 		
@@ -44,8 +51,10 @@ public class MLP_PSO {
 	}
 	
 	public void start (int epooc) {
+		this.gBestFitness = new double[epooc];
 		for (int i = 0; i < epooc; i++) {
 			this.calc_fitness();
+			this.calc_gBest(i);
 			this.populationAjust();
 		}
 	}
@@ -53,11 +62,11 @@ public class MLP_PSO {
 	/* Gerar pupulação, velocidade de ajuste e memoria inicial */	
 	public void  generatePopulation () {
 		
-		for (int i = 0; i < this.population.length; i++) {
-			for (int j = 0; j < this.population[0].length; j++) {
-				this.population[i][j] = Math.random();
-				this.pBest[i][j] = this.population[i][j];
-				this.velocity[i][j] = this.population[i][j];
+		for (int i = 0; i < this.particle.length; i++) {
+			for (int j = 0; j < this.particle[0].length; j++) {
+				this.particle[i][j] = Math.random();
+				this.pBest[i][j] = this.particle[i][j];
+				this.velocity[i][j] = this.particle[i][j];
 			}
 		}
 	}
@@ -81,7 +90,7 @@ public class MLP_PSO {
 //		double[] biasOutputWeights = new double[1];
 		
 		
-		for (int k = 0; k < this.population.length; k++) {
+		for (int k = 0; k < this.particle.length; k++) {
 			
 			int p = -1;
 
@@ -89,23 +98,26 @@ public class MLP_PSO {
 				for (int h = 0; h < net.length; h++) {	
 					for (int j = 0; j < this.input[0].length; j++) {
 						p++;
-						net[h] += this.population[k][p] * this.input[i][j];
+						net[h] += this.particle[k][p] * this.input[i][j];
 						
 					}
 				}
 				
 				for (int g = 0; g < net.length; g++) {
 					p++;
-					net[g] += this.population[k][p];
+					net[g] += this.particle[k][p];
+					
+					net[g] = sigmoid(net[g]);
 					
 				}
+				
 
 				for (int y = 0; y < net.length; y++) {
 					p++;
-					netOut += this.population[k][p] * net[y];	
+					netOut += this.particle[k][p] * net[y];	
 				}
 
-				netOut += this.population[k][p+1];
+				netOut += this.particle[k][p+1];
 
 				netOut = sigmoid(netOut);
 
@@ -127,40 +139,52 @@ public class MLP_PSO {
 			
 			/* criando / modificando memoria anterior das particulas */
 			
-			if(this.fitness != null) {
-				if(errorTotal < this.fitness[k]) {
-					for (int i = 0; i < this.population[0].length; i++) {
-						this.pBest[k][i] = this.population[k][i];
+			if(this.particleFitness[k] > 0) {
+				if(errorTotal < this.particleFitness[k]) {
+					for (int i = 0; i < this.particle[0].length; i++) {
+						this.pBest[k][i] = this.particle[k][i];
 					}
-					this.fitness[k] = errorTotal;
+					this.particleFitness[k] = errorTotal;
+					this.pBestFitness[k] = errorTotal;
 				}else {
-					for (int i = 0; i < this.population[0].length; i++) {
-						this.population[k][i] = this.pBest[k][i];
-					}
+					this.particleFitness[k] = errorTotal;
 				}
 			}else {
-				this.fitness[k] = errorTotal;
+				this.particleFitness[k] = errorTotal;
+				this.pBestFitness[k] = errorTotal;
 			}
 			
 			
 		}
+	}
+
+	public void calc_gBest (int index) {
+	/* encontrando melhor particula da população */
 		
-		/* encontrando melhor particula da população */
+		int i = this.min(pBestFitness);
 		
-		double small =  9999999;
-		
-		for (int i = 0; i < this.fitness.length; i++) {
-			
-			if(small > this.fitness[i]) {
-				
-				small = this.fitness[i];
+		if(index != 0) {
+
+			if(gBestFitness[index - 1] > this.pBestFitness[i]) {
+
+				gBestFitness[index] = pBestFitness[i];
 				
 				for (int j = 0; j < this.gBest.length; j++) {
-					this.gBest[j] = this.population[i][j];
+					this.gBest[j] = this.pBest[i][j];
 				}
+					
+			}else {
+				gBestFitness[index] = pBestFitness[i];
+			}
+		}else {
+			
+			gBestFitness[index] = pBestFitness[i];
+			
+			for (int j = 0; j < this.gBest.length; j++) {
+				this.gBest[j] = this.pBest[i][j];
 			}
 		}
-
+		
 		
 	}
 	
@@ -169,9 +193,9 @@ public class MLP_PSO {
 		
 		this.velocityAjust();
 		
-		for (int i = 0; i < population.length; i++) {
-			for (int j = 0; j < population[0].length; j++) {
-				this.population[i][j] = this.population[i][j] + this.velocity[i][j];
+		for (int i = 0; i < particle.length; i++) {
+			for (int j = 0; j < particle[0].length; j++) {
+				this.particle[i][j] = this.particle[i][j] + this.velocity[i][j];
 			}
 		}
 	}
@@ -179,12 +203,12 @@ public class MLP_PSO {
 	public void velocityAjust () {
 		for (int i = 0; i < this.velocity.length; i++) {
 			for (int j = 0; j < this.velocity[0].length; j++) {
-				System.out.println("Antes =>"+this.velocity[i][j]);
-				this.velocity[i][j] = this.velocity[i][j] + 2 * 
-						Math.random() * (this.pBest[i][j] - this.population[i][j]) + 2 * 
-						Math.random() * (this.gBest[j] - this.population[i][j]);
+				//System.out.println("Antes =>"+this.velocity[i][j]);
+				this.velocity[i][j] = this.velocity[i][j] + this.c1 * 
+						Math.random() * (this.pBest[i][j] - this.particle[i][j]) + this.c2 * 
+						Math.random() * (this.gBest[j] - this.particle[i][j]);
 				
-				System.out.println("Depois =>"+this.velocity[i][j]);
+				//System.out.println("Depois =>"+this.velocity[i][j]);
 			}
 		}
 	}
@@ -194,6 +218,25 @@ public class MLP_PSO {
 		return 1/( 1 + Math.exp(-value));
 	}
 	
+	public int min (double[] value) {
+		
+		double min = 999999;
+		int index = 0;
+		
+		for (int i = 0; i < value.length; i++) {
+			
+			if(min > value[i] ) {
+				min = value[i];
+                index = i;
+			}
+		}
+		
+		return index;
+	}
+	
+	public double[] getgBestFitness() {
+		return gBestFitness;
+	}	
 	
 	public void test (double[][] input, double[] output) {
 		
@@ -217,6 +260,8 @@ public class MLP_PSO {
 			for (int g = 0; g < net.length; g++) {
 				p++;
 				net[g] += this.gBest[p];
+				
+				net[g] = sigmoid(net[g]);
 				
 			}
 

@@ -28,11 +28,11 @@ public class Main {
 		double[][] baseTest = {{0,0},{0,1},{1,0},{1,1}};
 		double[] baseOutTest = {0,1,1,0};
 	
-		int epooc = 2000;
+		int epooc = 100;
 		
 		
 		
-		MLP_PSO p = new MLP_PSO(baseInput, baseOutput, baseValidate, baseOutValidate, 2, 0.5, 50);
+		MLP_PSO p = new MLP_PSO(baseInput, baseOutput, baseValidate, baseOutValidate, 2, 0.5, 50,2,2);
 		
 		p.start(epooc);
 		p.test(baseTest, baseOutTest);
@@ -49,19 +49,21 @@ public class Main {
 //			System.out.println("Saidas Desejadas => "+baseOutTest[i]+" Saidas => "+ result[i]);
 //		}
 //		
-//		Plot2DPanel plot = new Plot2DPanel();
-//		double x[] = new double[epoca];
-//		for (int i = 0; i < erro.length; i++) {
-//			x[i]=i;
-//		}
-//		
-//		plot.addLinePlot("Treino", x,erro);
-//		plot.addLinePlot("Validação", x,erroValidate);
-//		 JFrame frame = new JFrame("Plot");
-//		  frame.setContentPane(plot);
-//		  frame.setSize(300, 300);
-//		  
-//		  frame.setVisible(true);
+		Plot2DPanel plot = new Plot2DPanel();
+		double x[] = new double[epooc];
+		for (int i = 0; i < p.getgBestFitness().length; i++) {
+			x[i]=i;
+			
+			System.out.println(p.getgBestFitness()[i]);
+		}
+		
+		plot.addLinePlot("Treino", x,p.getgBestFitness());
+		//plot.addLinePlot("Validação", x,erroValidate);
+		 JFrame frame = new JFrame("Plot");
+		  frame.setContentPane(plot);
+		  frame.setSize(300, 300);
+		  
+		  frame.setVisible(true);
 //		
 //
 //
