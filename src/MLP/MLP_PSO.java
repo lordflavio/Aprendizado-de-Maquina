@@ -123,7 +123,7 @@ public class MLP_PSO {
 
 				error = (this.output[i] - netOut);
 				
-				errorTotal += Math.pow(error, 2);
+				errorTotal += Math.pow(error, 2); /*eé aqui meu filhoooooo*/
 				
 				error = 0;
 				netOut = 0;
@@ -154,7 +154,7 @@ public class MLP_PSO {
 				this.pBestFitness[k] = errorTotal;
 			}
 			
-			
+			errorTotal = 0;
 		}
 	}
 
@@ -165,7 +165,7 @@ public class MLP_PSO {
 		
 		if(index != 0) {
 
-			if(gBestFitness[index - 1] > this.pBestFitness[i]) {
+			if(gBestFitness[index-1] > this.pBestFitness[i]) {
 
 				gBestFitness[index] = pBestFitness[i];
 				
@@ -174,7 +174,7 @@ public class MLP_PSO {
 				}
 					
 			}else {
-				gBestFitness[index] = pBestFitness[i];
+				gBestFitness[index] = gBestFitness[index-1];
 			}
 		}else {
 			
