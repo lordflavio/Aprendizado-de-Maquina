@@ -267,7 +267,7 @@ public class MLP_PSO {
 		this.input = new double[base.length][window];
 		this.output = new double[base.length];
 		
-		for (int i = 0; i < base.length - 2; i++) {
+		for (int i = 0; i < base.length - window; i++) {
 			for (int j = 0; j < this.input[0].length; j++) {
 				this.input[i][j] = this.baseNormalized[i+j];
 			}

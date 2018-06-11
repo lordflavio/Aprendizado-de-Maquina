@@ -20,22 +20,22 @@ public class MainPSO {
 		
 		Bases base = new Bases();
 
-		int janela = 2;
+		int janela = 3;
 		
 		double[][] baseInput = new double[base.getBase().length - janela][janela];
 		double[] baseOutput = new double[base.getBase().length  - janela];
 		
-		for (int i = 0; i < base.getBase().length  - 2; i++) {
+		for (int i = 0; i < base.getBase().length  - janela; i++) {
 			for (int j = 0; j < baseInput[0].length; j++) {
 				baseInput[i][j] = base.getBase()[i+j];
 			}
-			baseOutput[i] = base.getBase()[i+2];
+			baseOutput[i] = base.getBase()[i+janela];
 		}
 		
 		int epooc = 100;
 		
 	    //new MLP_PSO(base, hiddenNeurons, learning, populationSize, c1, c2, window, wInertia, maxInertia, minInertia)
-		MLP_PSO p = new MLP_PSO(base.getBase(),2, 0.5, 50,2,2,2,0.8,0.8,0.2);
+		MLP_PSO p = new MLP_PSO(base.getBase(),10, 0.5, 50,2,2,janela,0.8,0.8,0.2);
 
 		p.start(epooc);
 		p.test(baseInput, baseOutput);
