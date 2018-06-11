@@ -75,7 +75,7 @@ public class MainArquivoBase {
 	
 		int epoca = 2000;
 		
-		Mlp mlp = new Mlp(baseInput, baseOutput, baseValidate, baseOutValidate,3, 0.95);
+		MLP_GRADIENTE mlp = new MLP_GRADIENTE(baseInput, baseOutput, baseValidate, baseOutValidate,3, 0.95);
 		  
 		double erro[] = mlp.train(epoca);
 		double[] result = mlp.generateMlp(baseTest, baseOutTest);

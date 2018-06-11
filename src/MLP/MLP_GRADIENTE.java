@@ -1,6 +1,6 @@
 package MLP;
 
-public class Mlp {
+public class MLP_GRADIENTE {
 	
 	double[][] input; /* base de treino */
 	double[] output; /* saida da bade de traino */
@@ -17,13 +17,11 @@ public class Mlp {
 	double[] biasInputWeights; /* peso do bias */
 	double[] biasOuputWeights; /* peso saida bias */
 	
-	
-	
 	double[] erroValidate; /* Erro  de Validação */
 	
 	
 	/* Metodo Construtor */
-	public Mlp(double[][] input, double[] output, double[][] inputValidate,double[] outputValidate, int hiddenNeurons, double learning ) {
+	public MLP_GRADIENTE(double[][] input, double[] output, double[][] inputValidate,double[] outputValidate, int hiddenNeurons, double learning ) {
 		
 		this.input = input;
 		this.output = output;
@@ -231,8 +229,6 @@ public class Mlp {
 			erro = (outputTest[i] - netOut);
 			
 			erroTotal += Math.pow(erro, 2);
-			
-			
 			
 			netOut = 0;
 			

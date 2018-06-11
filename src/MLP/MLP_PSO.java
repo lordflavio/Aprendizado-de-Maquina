@@ -2,9 +2,11 @@ package MLP;
 
 public class MLP_PSO {
 	
-	
-	double[][] input; /* base de treino */
-	double[] output; /* saida da bade de traino */
+	double[] base;
+	double[] baseNormalized;
+
+	double[][] input; /* base de treino  */
+	double[] output; /* saida da bade de traino  */
 	
 	double[][] inputValidate; /* base de validação */
 	double[] outputValidate; /* saida da base validação */
@@ -19,23 +21,35 @@ public class MLP_PSO {
 	double[] particleFitness;      /* Erro quadratico medio*/
 	double[][] pBest;      		/* Memoria anterior */
 	double[] pBestFitness;
-	double[] gBest;        			/* melhor particula*/
+	double[] gBest;        		/* melhor particula*/
 	double[] gBestFitness;
 	double c1,c2;
+	double min,max;
+	
+	double wInertia;
+	double maxInertia;
+	double minInertia;
+	
+	double[] mlpOutput; /* Saidas da rede*/
 
-	public MLP_PSO(double[][] input, double[] output, double[][] inputValidate, double[] outputValidate,
-			int hiddenNeurons, double learning, int populationSize, double c1, double c2) {
+	public MLP_PSO(double[] base, int hiddenNeurons, double learning, int populationSize, double c1, double c2, 
+				   int window, double wInertia, double maxInertia,double minInertia) {
 		super();
-		this.input = input;
-		this.output = output;
-		this.inputValidate = inputValidate;
-		this.outputValidate = outputValidate;
+		
+		this.base = base;
 		this.hiddenNeurons = hiddenNeurons;
 		this.learning = learning;
 		this.c1 = c1;
 		this.c2 = c2;
+		this.wInertia = wInertia;
+		this.maxInertia = maxInertia;
+		this.minInertia = minInertia;
 		
+		this.baseNormalized = new double[base.length];
 		
+		this.normalize();
+		this.createWindow(window);
+
 		int weights = input[0].length * hiddenNeurons + 2 * hiddenNeurons + 1;
 		
 		this.particle = new double[populationSize][weights];
@@ -46,8 +60,6 @@ public class MLP_PSO {
 		this.pBestFitness = new double[populationSize];
 		
 		this.generatePopulation();
-		
-		
 	}
 	
 	public void start (int epooc) {
@@ -56,6 +68,7 @@ public class MLP_PSO {
 			this.calc_fitness();
 			this.calc_gBest(i);
 			this.populationAjust();
+			this.inertiaAjust(i, epooc);
 		}
 	}
 
@@ -74,22 +87,12 @@ public class MLP_PSO {
 	/* calculando melhor particula a partir do erro quadratico medio */
 	public void calc_fitness() {
 		
-//		int inputWeights = input[0].length * this.hiddenNeurons;
-//		int biasInput = this.hiddenNeurons;
-//		int outWeights = this.hiddenNeurons;
-		
 		double[] net = new double[this.hiddenNeurons];
 		double netOut = 0;
 		
 		double error;
 		double errorTotal = 0;
-		
-//		double[][] auxInputWeights = new double[input[0].length][this.hiddenNeurons];
-//		double[][] auxOutWeights = new double[this.hiddenNeurons][1];
-//		double[] biasInputWeights = new double[this.hiddenNeurons];
-//		double[] biasOutputWeights = new double[1];
-		
-		
+
 		for (int k = 0; k < this.particle.length; k++) {
 			
 			int p = -1;
@@ -119,7 +122,7 @@ public class MLP_PSO {
 
 				netOut += this.particle[k][p+1];
 
-				netOut = sigmoid(netOut);
+				//netOut = sigmoid(netOut);
 
 				error = (this.output[i] - netOut);
 				
@@ -161,7 +164,7 @@ public class MLP_PSO {
 	public void calc_gBest (int index) {
 	/* encontrando melhor particula da população */
 		
-		int i = this.min(pBestFitness);
+		int i = this.minFitness(pBestFitness);
 		
 		if(index != 0) {
 
@@ -204,7 +207,7 @@ public class MLP_PSO {
 		for (int i = 0; i < this.velocity.length; i++) {
 			for (int j = 0; j < this.velocity[0].length; j++) {
 				//System.out.println("Antes =>"+this.velocity[i][j]);
-				this.velocity[i][j] = this.velocity[i][j] + this.c1 * 
+				this.velocity[i][j] = this.wInertia * this.velocity[i][j] + this.c1 * 
 						Math.random() * (this.pBest[i][j] - this.particle[i][j]) + this.c2 * 
 						Math.random() * (this.gBest[j] - this.particle[i][j]);
 				
@@ -218,7 +221,7 @@ public class MLP_PSO {
 		return 1/( 1 + Math.exp(-value));
 	}
 	
-	public int min (double[] value) {
+	public int minFitness (double[] value) {
 		
 		double min = 999999;
 		int index = 0;
@@ -233,13 +236,60 @@ public class MLP_PSO {
 		
 		return index;
 	}
+		
+	public void normalize () {
+		
+		this.max = 0;
+		this.min = base[0];
+		
+		for (int i = 0; i < base.length; i++) {
+			 
+			 if(this.max < base[i]) {
+				 this.max = base[i];
+			 }
+			 
+			 if(this.min > base[i]) {
+				 this.min = base[i];
+			 }
+		}
+		
+		for (int i = 0; i < base.length; i++) {
+			this.baseNormalized[i] = (this.base[i] - this.max) / (this.max - this.min);
+		}
+	}
+	
+	public double  denormalize (double value) {
+		return value * (this.max - this.min) + this.max;
+	}
+	
+	public void createWindow(int window) {
+		
+		this.input = new double[base.length][window];
+		this.output = new double[base.length];
+		
+		for (int i = 0; i < base.length - 2; i++) {
+			for (int j = 0; j < this.input[0].length; j++) {
+				this.input[i][j] = this.baseNormalized[i+j];
+			}
+			this.output[i] = baseNormalized[i+2];
+		}
+	}
+	
+	public void inertiaAjust(int index, int epooc) {
+		this.wInertia = this.maxInertia - index / epooc * (this.maxInertia - this.minInertia);
+	}
 	
 	public double[] getgBestFitness() {
 		return gBestFitness;
 	}	
 	
+	public double[] getMlpOutput() {
+		return mlpOutput;
+	}
+
 	public void test (double[][] input, double[] output) {
 		
+		this.mlpOutput = new double[input.length];
 		double[] net = new double[this.hiddenNeurons];
 		double netOut = 0;
 		
@@ -261,7 +311,7 @@ public class MLP_PSO {
 				p++;
 				net[g] += this.gBest[p];
 				
-				net[g] = sigmoid(net[g]);
+				net[g] = this.sigmoid(net[g]);
 				
 			}
 
@@ -272,9 +322,9 @@ public class MLP_PSO {
 
 			netOut += this.gBest[p+1];
 
-			netOut = sigmoid(netOut);
-			
-			System.out.println("Saida Esperada => "+output[i]+" | Saida da rede => "+netOut);
+			//netOut = this.sigmoid(netOut);
+			this.mlpOutput[i] = this.denormalize(netOut);
+			//System.out.println("Saida Esperada => "+output[i]+" | Saida da rede => "+this.denormalize(netOut));
 
 			netOut = 0;
 			p = -1;
