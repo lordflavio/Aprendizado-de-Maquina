@@ -31,17 +31,17 @@ public class MLP_GRADIENTE {
 		this.hiddenNeurons = hiddenNeurons;
 		this.learning = learning;
 
-		inputWeights = generateWeights(this.input[0].length, this.hiddenNeurons);
-		outputWeights = generateWeights(this.hiddenNeurons, 1);
+//		this.inputWeights = generateWeights(this.input[0].length, this.hiddenNeurons);
+//		this.outputWeights = generateWeights(this.hiddenNeurons, 1);
+//		
+//		this.biasInputWeights = generateBiasWeights(this.hiddenNeurons);
+//		this.biasOuputWeights = generateBiasWeights(1);
 		
-		biasInputWeights = generateBiasWeights(this.hiddenNeurons);
-		biasOuputWeights = generateBiasWeights(1);
+		this.inputWeights = new double[this.input[0].length][this.hiddenNeurons];
+		this.outputWeights = new double [this.hiddenNeurons][1];
 		
-		//inputWeights = new double[this.input[0].length][this.hiddenNeurons];
-		//outputWeights = new double [this.hiddenNeurons][1];
-		
-		//biasInputWeights = new double[hiddenNeurons];
-		//biasOuputWeights = new double[1];
+		this.biasInputWeights = new double[this.hiddenNeurons];
+		this.biasOuputWeights = new double[1];
 		
 //		this.generateMlp(inputTeste, outputTeste);
 		
@@ -64,15 +64,16 @@ public class MLP_GRADIENTE {
 		
 		for (int n = 0; n < epoca; n++) { /* Número de interações */
 			
-			for (int i = 0; i < input.length; i++) { /* Linhas da Base  */
+			for (int i = 0; i < this.input.length; i++) { /* Linhas da Base  */
 				
 				for (int j = 0; j < this.hiddenNeurons; j++) { /* Neuronios escondiodos */
 					
-					for (int k = 0; k < input[0].length; k++) { /* coulunas da base*/
+					for (int k = 0; k < this.input[0].length; k++) { /* coulunas da base*/
 						
 						net[j] +=  this.inputWeights[k][j] * this.input[i][k];
+						//System.out.println(this.inputWeights[k][j]);
 					}
-					
+					//System.out.println();
 						net[j] += this.biasInputWeights[j];
 															
 						net[j] = sigmoid(net[j]);
@@ -87,16 +88,18 @@ public class MLP_GRADIENTE {
 				
 				netOut += this.biasOuputWeights[0];
 				
-				netOut = sigmoid(netOut);
+			//	netOut = sigmoid(netOut);
 				
-			//	System.out.println("Saida desejada: =>"+this.output[i] +" | Saida Obtida =>" + netOut);
+				//System.out.println("Saida desejada: =>"+this.output[i] +" | Saida Obtida =>" + netOut);
 				
 				erro = (this.output[i] - netOut);
 				
 				erroTotal[n] += Math.pow(erro, 2);
 				
 				
-				gradientOut = erro * netOut * (1 - netOut); /*calculo do gradiente do neurônio de saida */
+				//gradientOut = 1 * erro * netOut * (1 - netOut); /*calculo do gradiente do neurônio de saida */
+				
+				gradientOut = erro;
 				
 				for (int j = 0; j < gradients.length; j++) { /*calculo do gradiente dos neurônio escondidos */
 					gradients[j] = this.outputWeights[j][0] * gradientOut;
@@ -106,14 +109,11 @@ public class MLP_GRADIENTE {
 				/* Ajuste de pesos */
 				
 				for (int j = 0; j < this.hiddenNeurons; j++) {
-					
 					this.outputWeights[j][0] += this.learning * net[j] * gradientOut;
-					
 					for (int g = 0; g < this.input[0].length; g++) {
-						this.inputWeights[g][j] += this.learning * this.input[i][g] * gradients[j]; 
+						this.inputWeights[g][j] = this.inputWeights[g][j] + this.learning * this.input[i][g] * gradients[j]; 
 					}
 				}
-				
 				/* Ajuste de Bias */
 				for (int j = 0; j < this.biasOuputWeights.length; j++) {
 					this.biasOuputWeights[j] += this.learning * 1 * gradientOut;
@@ -121,8 +121,17 @@ public class MLP_GRADIENTE {
 				
 				for (int j = 0; j < this.hiddenNeurons; j++) {
 					this.biasInputWeights[j] += this.learning * 1 * gradients[j];
-					
+				
 				}
+				
+//				for (int j = 0; j < this.inputWeights.length; j++) {
+//					for (int j2 = 0; j2 < this.inputWeights[0].length; j2++) {
+//						
+//						System.out.println(this.inputWeights[j][j2]);
+//					}
+//				}
+				
+				System.out.println();
 				
 				/* Set de Variaveis */
 				
@@ -135,7 +144,7 @@ public class MLP_GRADIENTE {
 					gradients[j] = 0;
 				}
 
-				//System.out.println("------------------------------------------------------------");
+			//	System.out.println("------------------------------------------------------------");
 
 			}
 			
@@ -175,7 +184,7 @@ public class MLP_GRADIENTE {
 			
 			netOut += this.biasOuputWeights[0];	 
 			
-			netOut = sigmoid(netOut);
+			//netOut = sigmoid(netOut);
 			
 			erro = (outputValidate[i] - netOut);
 			
@@ -200,10 +209,14 @@ public class MLP_GRADIENTE {
 		
 		double[] net = new double[this.hiddenNeurons];
 		double netOut = 0;
-		double erro = 0;
-        double erroTotal = 0;  
-		double[] gradients = new double[this.hiddenNeurons]; 
-		double gradientOut = 0;
+		
+//		double erro = 0;
+//        double erroTotal = 0;  
+//		double[] gradients = new double[this.hiddenNeurons]; 
+//		double gradientOut = 0;
+		
+		System.out.println(result.length);
+		System.out.println(inputTest.length);
 		
 		for (int i = 0; i < inputTest.length; i++) {
 			for (int j = 0; j < this.hiddenNeurons; j++) {
@@ -222,13 +235,13 @@ public class MLP_GRADIENTE {
 			
 			netOut += this.biasOuputWeights[0];	 
 			
-			netOut = sigmoid(netOut);
+			//netOut = sigmoid(netOut);
 			
 			result[i] = netOut;
 			
-			erro = (outputTest[i] - netOut);
-			
-			erroTotal += Math.pow(erro, 2);
+//			erro = (outputTest[i] - netOut);
+//			
+//			erroTotal += Math.pow(erro, 2);
 			
 			netOut = 0;
 			
@@ -241,7 +254,7 @@ public class MLP_GRADIENTE {
 		return result;
 	}
 	
-	/* Gegar pesos aleatorios para arrays[][] */
+	/* Gegar pesos aleatorios para arrays[][] 
 	public double[][] generateWeights(int line, int column) {
 		double[][] weights = new double[line][column];
 		
@@ -254,7 +267,7 @@ public class MLP_GRADIENTE {
 		return weights;
 	}
 	
-	/* Gerar pesos alearorios para vetores[] */
+	/* Gerar pesos alearorios para vetores[] 
 	public double[] generateBiasWeights(int line) {
 		double[] weights = new double[line];
 		
@@ -263,6 +276,34 @@ public class MLP_GRADIENTE {
 			}
 		
 		return weights;
+	}*/
+	
+	
+	/* Gegar pesos aleatorios para arrays[][] */
+	public void generateWeights(double[] weights) {
+		int p = -1;
+		/*pesos da entrada*/
+		for (int i = 0; i < this.inputWeights.length; i++) {
+			for (int j = 0; j < this.inputWeights[0].length; j++) {
+				p++;
+				this.inputWeights[i][j] = weights[p];
+			}
+		}
+		
+		for (int i = 0; i < this.outputWeights.length; i++) {
+			for (int j = 0; j < this.outputWeights[0].length; j++) {
+				p++;
+				this.outputWeights[i][j] = weights[p];
+			}
+		}
+		
+		for (int i = 0; i < this.biasInputWeights.length; i++) {
+			p++;
+			this.biasInputWeights[i] = weights[p];
+		}
+		
+		this.biasOuputWeights[0] = weights[p+1];
+
 	}
 	
 	public double sigmoid (double value) {

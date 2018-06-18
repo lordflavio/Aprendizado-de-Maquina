@@ -3,11 +3,11 @@ package MLP;
 public class MLP_PSO_GRADIENTE {
 	double[] base;
 	double[] baseNormalized;
-	
+
 	double baseTrain;
 	double baseValidate;
 	double baseTest;
-
+	
 	double[][] input; /* base de treino  */
 	double[] output; /* saida da bade de traino  */
 	
@@ -21,6 +21,13 @@ public class MLP_PSO_GRADIENTE {
 	double learning; /* taxa de aprendisado  */
 	
 	double[] erroValidate; /* Erro  de Validação */
+	
+	double[][] inputWeights; /* pesos do treino */
+	double[][] outputWeights; /* peso da saida do treino */
+	
+	double[] biasInputWeights; /* peso do bias */
+	double[] biasOuputWeights; /* peso saida bias */
+	
 	double[] erroTotal;
 	
 	double[][] particle;		 /* População */
@@ -70,9 +77,15 @@ public class MLP_PSO_GRADIENTE {
 		this.particleFitness = new double[populationSize];
 		this.pBestFitness = new double[populationSize];
 		
+		this.inputWeights = new double[input[0].length][hiddenNeurons];
+		this.biasInputWeights = new double[hiddenNeurons];
+		
+		this.outputWeights = new double[hiddenNeurons][1];
+		this.biasOuputWeights = new double[1];
+		
 		this.generatePopulation();
 	}
-
+	
 	public void start (int epooc) {
 		this.gBestFitness = new double[epooc];
 		for (int i = 0; i < epooc; i++) {
@@ -82,28 +95,13 @@ public class MLP_PSO_GRADIENTE {
 			this.inertiaAjust(i, epooc);
 		}
 		
-		this.test(this.inputTest, this.outputTest);
-		this.mlpOutputPSOGradiente = new double[this.outputTest.length];
-		
-		MLP_GRADIENTE mlp = new MLP_GRADIENTE(this.input, this.output, this.inputValidate, this.outputValidate, this.hiddenNeurons, this.learning);
-		mlp.generateWeights(this.gBest);
-		this.erroTotal = mlp.train(1000);
-		this.erroValidate = mlp.getErroValidate();
-		double[] result = mlp.generateMlp(this.inputTest, this.outputTest);
-		
-		for (int i = 0; i < result.length; i++) {
-			this.mlpOutputPSOGradiente[i] = this.denormalize(result[i]);
-		}
-		
-//		for (int i = 0; i < this.inputTest.length; i++) {
-//			for (int j = 0; j < this.inputTest[0].length; j++) {
-//				//System.out.println(inputTest[i][j]);
-//			}
-//		}
-		
+		this.generateWeights();
+		this.erroTotal = this.train(epooc);
 		
 	}
-
+	
+	/* ----------------------------------------------------- PSO------------------------------------------------------- */
+	
 	/* Gerar pupulação, velocidade de ajuste e memoria inicial */	
 	public void  generatePopulation () {
 		
@@ -239,13 +237,191 @@ public class MLP_PSO_GRADIENTE {
 		for (int i = 0; i < this.velocity.length; i++) {
 			for (int j = 0; j < this.velocity[0].length; j++) {
 				//System.out.println("Antes =>"+this.velocity[i][j]);
-				this.velocity[i][j] = (this.wInertia * this.velocity[i][j]) + this.c1 * 
+				this.velocity[i][j] = this.wInertia * this.velocity[i][j] + this.c1 * 
 						Math.random() * (this.pBest[i][j] - this.particle[i][j]) + this.c2 * 
 						Math.random() * (this.gBest[j] - this.particle[i][j]);
 				
 				//System.out.println("Depois =>"+this.velocity[i][j]);
 			}
 		}
+	}
+	
+	public void inertiaAjust(int index, int epooc) {
+		this.wInertia = this.maxInertia - index / epooc * (this.maxInertia - this.minInertia);
+	}
+	
+	/* ----------------------------------------------------- GRADIENTE------------------------------------------------------- */
+	
+	/* Gegar pesos aleatorios para arrays[][] */
+	public void generateWeights() {
+		int p = -1;
+		/*pesos da entrada*/
+		for (int i = 0; i < this.inputWeights.length; i++) {
+			for (int j = 0; j < this.inputWeights[0].length; j++) {
+				p++;
+				this.inputWeights[i][j] = this.gBest[p];
+			}
+		}
+		
+		for (int i = 0; i < this.outputWeights.length; i++) {
+			for (int j = 0; j < this.outputWeights[0].length; j++) {
+				p++;
+				this.outputWeights[i][j] = this.gBest[p];
+			}
+		}
+		
+		for (int i = 0; i < this.biasInputWeights.length; i++) {
+			p++;
+			this.biasInputWeights[i] = this.gBest[p];
+		}
+		
+		this.biasOuputWeights[0] = this.gBest[p+1];
+
+	}
+	
+	/* Metodo de Treino */
+	public double[] train (int epoca) {
+		
+		this.erroValidate = new double[epoca];
+		
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		
+		double erro = 0;
+		
+		double[] erroTotal = new double[epoca];  
+		
+		double[] gradients = new double[this.hiddenNeurons]; 
+		double gradientOut = 0;
+		
+		for (int n = 0; n < epoca; n++) { /* Número de interações */
+			
+			for (int i = 0; i < input.length; i++) { /* Linhas da Base  */
+				
+				for (int j = 0; j < this.hiddenNeurons; j++) { /* Neuronios escondiodos */
+					
+					for (int k = 0; k < input[0].length; k++) { /* coulunas da base*/
+						
+						net[j] +=  this.inputWeights[k][j] * this.input[i][k];
+					}
+					
+						net[j] += this.biasInputWeights[j];
+															
+						net[j] = sigmoid(net[j]);
+				}
+				
+				
+				for (int j = 0; j < this.hiddenNeurons; j++) {
+					 
+						netOut += this.outputWeights[j][0] * net[j];
+					   
+				}
+				
+				netOut += this.biasOuputWeights[0];
+				
+			//netOut = sigmoid(netOut);
+				
+				//System.out.println("Saida desejada: =>"+this.output[i] +" | Saida Obtida =>" + netOut);
+				
+				erro = (this.output[i] - netOut);
+				
+				erroTotal[n] += Math.pow(erro, 2);
+				
+				
+				gradientOut = erro * netOut * (1 - netOut); /*calculo do gradiente do neurônio de saida */
+				
+				for (int j = 0; j < gradients.length; j++) { /*calculo do gradiente dos neurônio escondidos */
+					gradients[j] = this.outputWeights[j][0] * gradientOut;
+					gradients[j] = gradients[j] * net[j] * (1 - net[j]);
+				}
+				
+				/* Ajuste de pesos */
+				
+				for (int j = 0; j < this.hiddenNeurons; j++) {
+					
+					this.outputWeights[j][0] += this.learning * net[j] * gradientOut;
+					
+					for (int g = 0; g < this.input[0].length; g++) {
+						this.inputWeights[g][j] += this.learning * this.input[i][g] * gradients[j]; 
+					}
+				}
+				
+				/* Ajuste de Bias */
+				for (int j = 0; j < this.biasOuputWeights.length; j++) {
+					this.biasOuputWeights[j] += this.learning * 1 * gradientOut;
+				}
+				
+				for (int j = 0; j < this.hiddenNeurons; j++) {
+					this.biasInputWeights[j] += this.learning * 1 * gradients[j];
+					
+				}
+				
+				/* Set de Variaveis */
+				
+				netOut = 0;
+				gradientOut = 0;
+				
+				for (int j = 0; j < this.hiddenNeurons; j++) {
+					
+					net[j] = 0;
+					gradients[j] = 0;
+				}
+
+				//System.out.println("------------------------------------------------------------");
+
+			}
+			
+			
+			this.erroValidate[n] = this.validate(this.inputValidate, this.outputValidate);
+			
+			erroTotal[n] = erroTotal[n] / this.input.length;
+			
+		}
+		
+		return erroTotal;
+	}
+	
+	/* Metodo de Validação */
+	public double validate(double[][] inputValidate, double[] outputValidate) {
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		double erro = 0;
+        double erroTotal = 0;  
+		double[] gradients = new double[this.hiddenNeurons]; 
+		double gradientOut = 0;
+		
+		for (int i = 0; i < inputValidate.length; i++) {
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				for (int k = 0; k < inputValidate[0].length; k++) {
+					net[j] +=  this.inputWeights[k][j] * inputValidate[i][k];
+				}
+				
+				net[j] += this.biasInputWeights[j];
+				
+				net[j] = sigmoid(net[j]);
+			}
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {  
+				netOut += this.outputWeights[j][0] * net[j];
+			}
+			
+			netOut += this.biasOuputWeights[0];	 
+			
+			netOut = sigmoid(netOut);
+			
+			erro = (outputValidate[i] - netOut);
+			
+			erroTotal += Math.pow(erro, 2);
+			
+			netOut = 0;
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				net[j] = 0;
+			}
+			
+		}
+		
+		return (erroTotal/inputValidate.length);
 	}
 	
 	/* Metodo de ativação */
@@ -286,19 +462,19 @@ public class MLP_PSO_GRADIENTE {
 		}
 		
 		for (int i = 0; i < base.length; i++) {
-			this.baseNormalized[i] = (this.base[i] - this.min) / (this.max - this.min);
+			this.baseNormalized[i] = (this.base[i] - this.max) / (this.max - this.min);
 		}
 	}
 	
 	public double  denormalize (double value) {
-		return value * (this.max - this.min) + this.min;
+		return value * (this.max - this.min) + this.max;
 	}
 	
 	public void createWindow(int window) {
-	
-		int train =  (int) Math.round((base.length - window) * baseTrain);
-		int validade = (int) Math.round((base.length - window) * baseValidate);
-		int test = (int) Math.round((base.length - window) * baseTest);
+		
+		int train =  (int) Math.round(base.length * baseTrain);
+		int validade = (int) Math.round(base.length * baseValidate);
+		int test = (int) Math.round(base.length * baseValidate);
 		
 		this.input = new double[train][window];
 		this.output = new double[train];
@@ -306,80 +482,42 @@ public class MLP_PSO_GRADIENTE {
 		this.inputValidate = new double[validade][window];
 		this.outputValidate = new double[validade];
 		
-		this.inputTest = new double[test - 1][window];
+		this.inputTest = new double[test][window];
 		this.outputTest = new double[test];
 		
-		int aux = 0;
+		int aux = -1;
 		
-		for (int i = 0; i < this.input.length; i++) {
-			aux++;
-			for (int j = 0; j <  this.input[0].length; j++) {
-				this.input[i][j] = this.baseNormalized[aux+j];
+			for (int i = 0; i < this.input.length; i++) {
+				aux++;
+				for (int j = 0; j <  this.input[0].length; j++) {
+					  this.input[i][j] = this.baseNormalized[aux+j];
+				}
+				
+				this.output[i] = baseNormalized[aux+window];
 			}
-
-			this.output[i] = baseNormalized[aux+window];
-		}
-
-		for (int i = 0; i < this.inputValidate.length; i++) {
-			aux++;
-			for (int k = 0; k < this.inputValidate[0].length; k++) {
-				this.inputValidate[i][k] = this.baseNormalized[aux+k];
-			}
-			this.outputValidate[i] = baseNormalized[aux+window];
-		}
-
-		for (int i = 0; i < this.inputTest.length; i++) {
-			aux++;
-			for (int j = 0; j < this.inputTest[0].length; j++) {
-				this.inputTest[i][j] = baseNormalized[aux+j];
-			}
-
-			this.outputTest[i] = base[aux+window];
-		}
-
 			
-		String s ="", s1="", s2= "";
-
-		for (int i = 0; i < this.input.length; i++) {
-			for (int j = 0; j < this.input[0].length; j++) {
-				s += this.input[i][j] + " | ";
+			for (int i = 0; i < this.inputValidate.length; i++) {
+				aux++;
+				for (int k = 0; k < this.inputValidate[0].length; k++) {
+					this.inputValidate[i][k] = this.baseNormalized[aux+k];
+				}
+				this.outputValidate[i] = baseNormalized[aux+window];
 			}
-
-			s += "|=>" + this.output[i] + "\n";
-		}
-
-		for (int i = 0; i < this.inputValidate.length; i++) {
-			for (int j = 0; j < this.inputValidate[0].length; j++) {
-				s1 += this.inputValidate[i][j] + " | ";
+			
+			for (int i = 0; i < this.inputTest.length; i++) {
+				aux++;
+				for (int j = 0; j < this.inputTest[0].length; j++) {
+					this.inputTest[i][j] = baseNormalized[aux+j];
+				}
+				
+				this.outputTest[i] = base[aux+window];
 			}
-
-			s1 += "|=>" + this.outputValidate[i] + "\n";
-		}
-
-		for (int i = 0; i < this.inputTest.length; i++) {
-			for (int j = 0; j < this.inputTest[0].length; j++) {
-				s2 += this.inputTest[i][j] + " | ";
-			}
-
-			s2 += "|=>" + this.outputTest[i] + "\n";
-		}
-
-
-//		System.out.println(s);
-//		System.out.println("________________________________________________________________________________________________");
-//		System.out.println(s1);
-//		System.out.println("________________________________________________________________________________________________");
-//		System.out.println(s2);
-
-	}
-	
-	public void inertiaAjust(int index, int epooc) {
-		this.wInertia = (this.maxInertia - index / epooc) * (this.maxInertia - this.minInertia);
+			
 	}
 	
 	public double[] getgBestFitness() {
 		return gBestFitness;
-	}	
+	}
 	
 	public double[] getMlpOutputPSO() {
 		return mlpOutputPSO;
@@ -398,11 +536,10 @@ public class MLP_PSO_GRADIENTE {
 	}
 
 	public double[] getOutputTest() {
-
 		return outputTest;
 	}
 
-	public void test (double[][] input, double[] output) {
+	public void generateMlpPSO () {
 		
 		this.mlpOutputPSO = new double[input.length];
 		double[] net = new double[this.hiddenNeurons];
@@ -413,11 +550,11 @@ public class MLP_PSO_GRADIENTE {
 		
 		int p = -1;
 
-		for (int i = 0; i < input.length; i++) {
+		for (int i = 0; i < this.inputTest.length; i++) {
 			for (int h = 0; h < net.length; h++) {	
-				for (int j = 0; j < input[0].length; j++) {
+				for (int j = 0; j < this.inputTest[0].length; j++) {
 					p++;
-					net[h] += this.gBest[p] * input[i][j];
+					net[h] += this.gBest[p] * this.inputTest[i][j];
 					
 				}
 			}
@@ -451,4 +588,49 @@ public class MLP_PSO_GRADIENTE {
 		}
 	}
 
+	public void generateMlpPSOGradiente (){
+		
+		this.mlpOutputPSOGradiente = new double[inputTest.length];
+		
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		double erro = 0;
+        double erroTotal = 0;  
+		double[] gradients = new double[this.hiddenNeurons]; 
+		double gradientOut = 0;
+		
+		for (int i = 0; i < this.inputTest.length; i++) {
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				for (int k = 0; k < this.inputTest[0].length; k++) {
+					net[j] +=  this.inputWeights[k][j] * this.inputTest[i][k];
+				}
+				
+				net[j] += this.biasInputWeights[j];
+				
+				net[j] = sigmoid(net[j]);
+			}
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {  
+				netOut += this.outputWeights[j][0] * net[j];
+			}
+			
+			netOut += this.biasOuputWeights[0];	 
+			
+			//netOut = sigmoid(netOut);
+			
+			this.mlpOutputPSOGradiente[i] = this.denormalize(netOut);
+			
+//			erro = (outputTest[i] - netOut);
+//			
+//			erroTotal += Math.pow(erro, 2);
+			
+			netOut = 0;
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				net[j] = 0;
+			}
+			
+		}
+	}
+	
 }

@@ -207,7 +207,7 @@ public class MLP_PSO {
 		for (int i = 0; i < this.velocity.length; i++) {
 			for (int j = 0; j < this.velocity[0].length; j++) {
 				//System.out.println("Antes =>"+this.velocity[i][j]);
-				this.velocity[i][j] = this.wInertia * this.velocity[i][j] + this.c1 * 
+				this.velocity[i][j] = (this.wInertia * this.velocity[i][j]) + this.c1 * 
 						Math.random() * (this.pBest[i][j] - this.particle[i][j]) + this.c2 * 
 						Math.random() * (this.gBest[j] - this.particle[i][j]);
 				
@@ -271,12 +271,12 @@ public class MLP_PSO {
 			for (int j = 0; j < this.input[0].length; j++) {
 				this.input[i][j] = this.baseNormalized[i+j];
 			}
-			this.output[i] = baseNormalized[i+2];
+			this.output[i] = baseNormalized[i+window];
 		}
 	}
 	
 	public void inertiaAjust(int index, int epooc) {
-		this.wInertia = this.maxInertia - index / epooc * (this.maxInertia - this.minInertia);
+		this.wInertia = (this.maxInertia - index / epooc) * (this.maxInertia - this.minInertia);
 	}
 	
 	public double[] getgBestFitness() {
