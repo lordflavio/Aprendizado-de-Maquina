@@ -14,7 +14,7 @@ public class MainPSO_Gradiente {
 		
 		//MLP_PSO_GRADIENTE(base, baseTrain, baseValidade, test, hiddenNeurons, learning, populationSize, c1, c2, window, wInertia, maxInertia, minInertia)
 		
-		MLP_PSO_GRADIENTE mlp = new MLP_PSO_GRADIENTE(base.getBaseDolar(), 0.50, 0.20, 0.30, 6, 0.01, 100, 2, 2, 1, 0.8, 0.8, 0.2);
+		MLP_PSO_GRADIENTE mlp = new MLP_PSO_GRADIENTE(base.getBase(), 0.50, 0.20, 0.30, 10, 0.01, 100, 2, 2, 4, 0.8, 0.8, 0.2);
 		mlp.start(epooc);
 		
 		

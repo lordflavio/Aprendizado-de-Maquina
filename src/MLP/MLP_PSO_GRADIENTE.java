@@ -87,20 +87,14 @@ public class MLP_PSO_GRADIENTE {
 		
 		MLP_GRADIENTE mlp = new MLP_GRADIENTE(this.input, this.output, this.inputValidate, this.outputValidate, this.hiddenNeurons, this.learning);
 		mlp.generateWeights(this.gBest);
-		this.erroTotal = mlp.train(1000);
+		this.erroTotal = mlp.train(100);
 		this.erroValidate = mlp.getErroValidate();
 		double[] result = mlp.generateMlp(this.inputTest, this.outputTest);
+		System.out.println(mlp.erroTotal); 
 		
 		for (int i = 0; i < result.length; i++) {
 			this.mlpOutputPSOGradiente[i] = this.denormalize(result[i]);
 		}
-		
-//		for (int i = 0; i < this.inputTest.length; i++) {
-//			for (int j = 0; j < this.inputTest[0].length; j++) {
-//				//System.out.println(inputTest[i][j]);
-//			}
-//		}
-		
 		
 	}
 
