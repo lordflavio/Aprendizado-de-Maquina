@@ -39,6 +39,7 @@ public class MLP_PSO_GRADIENTE {
 	
 	double[] mlpOutputPSO;           /* Saidas da rede*/
 	double[] mlpOutputPSOGradiente; /* Saidas da rede*/
+	double[] mlpPSOGradientePrevision;
 
 	public MLP_PSO_GRADIENTE(double[] base, double baseTrain, double baseValidade, double baseTest, int hiddenNeurons, double learning, int populationSize, double c1, double c2, 
 				   int window, double wInertia, double maxInertia,double minInertia) {
@@ -83,25 +84,9 @@ public class MLP_PSO_GRADIENTE {
 		}
 		
 		this.test(this.inputTest, this.outputTest);
-		this.mlpOutputPSOGradiente = new double[this.outputTest.length];
-		
-		MLP_GRADIENTE mlp = new MLP_GRADIENTE(this.input, this.output, this.inputValidate, this.outputValidate, this.hiddenNeurons, this.learning);
-		mlp.generateWeights(this.gBest);
-		this.erroTotal = mlp.train(1000);
-		this.erroValidate = mlp.getErroValidate();
-		double[] result = mlp.generateMlp(this.inputTest, this.outputTest);
-		
-		for (int i = 0; i < result.length; i++) {
-			this.mlpOutputPSOGradiente[i] = this.denormalize(result[i]);
-		}
-		
-//		for (int i = 0; i < this.inputTest.length; i++) {
-//			for (int j = 0; j < this.inputTest[0].length; j++) {
-//				//System.out.println(inputTest[i][j]);
-//			}
-//		}
-		
-		
+		this.erroTotal = this.train(epooc);
+		this.mlpOutputPSOGradiente = this.generateMlp(this.inputTest, this.outputTest);
+
 	}
 
 	/* Gerar pupulação, velocidade de ajuste e memoria inicial */	
@@ -402,6 +387,10 @@ public class MLP_PSO_GRADIENTE {
 		return outputTest;
 	}
 
+	public double[] getMlpPSOGradientePrevision() {
+		return mlpPSOGradientePrevision;
+	}
+
 	public void test (double[][] input, double[] output) {
 		
 		this.mlpOutputPSO = new double[input.length];
@@ -436,6 +425,10 @@ public class MLP_PSO_GRADIENTE {
 			}
 
 			netOut += this.gBest[p+1];
+			
+			error = (output[i] - netOut);
+			
+			errorTotal += Math.pow(error, 2);
 
 			//netOut = this.sigmoid(netOut);
 			this.mlpOutputPSO[i] = this.denormalize(netOut);
@@ -449,6 +442,288 @@ public class MLP_PSO_GRADIENTE {
 			}
 
 		}
+		
+		System.out.println(errorTotal / input.length);
 	}
 
+	/* Metodo de Treino */
+	public double[] train (int epoca) {
+		
+		this.erroValidate = new double[epoca];
+		
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		
+		double erro = 0;
+		
+		double[] erroTotal = new double[epoca];  
+		
+		double[] gradients = new double[this.hiddenNeurons]; 
+		double gradientOut = 0;
+		
+		for (int n = 0; n < epoca; n++) { /* Número de interações */
+			
+			int p = -1;
+
+			for (int i = 0; i < this.input.length; i++) {
+				for (int h = 0; h < net.length; h++) {	
+					for (int j = 0; j < this.input[0].length; j++) {
+						p++;
+						net[h] += this.gBest[p] * this.input[i][j];
+						
+					}
+				}
+				
+				for (int g = 0; g < net.length; g++) {
+					p++;
+					net[g] += this.gBest[p];
+					
+					net[g] = this.sigmoid(net[g]);
+					
+				}
+
+				int z = p;
+				
+				for (int y = 0; y < net.length; y++) {
+					p++;
+					netOut += this.gBest[p] * net[y];	
+				}
+
+				netOut += this.gBest[p+1];
+
+				erro = (this.output[i] - netOut);
+				
+				erroTotal[n] += Math.pow(erro, 2);
+				
+				
+				//gradientOut = 1 * erro * netOut * (1 - netOut); /*calculo do gradiente do neurônio de saida */
+				
+				gradientOut = 1 * erro;
+				
+				
+				for (int j = 0; j < gradients.length; j++) { /*calculo do gradiente dos neurônio escondidos */
+					z++;
+					gradients[j] = this.gBest[z] * gradientOut;
+					gradients[j] = gradients[j] * net[j] * (1 - net[j]);
+				}
+				
+				
+				/* Ajuste de pesos */
+				
+				this.gBest[p+1] += this.learning * 1 * gradientOut; // bias output
+				
+				for (int j = 0; j < net.length; j++) {
+					this.gBest[p] += this.learning * net[j] * gradientOut; // weights neuronios escondidos
+					p--;
+				}
+				
+				for (int j = 0; j < net.length; j++) {
+					this.gBest[p] += this.learning * 1 * gradients[j];  // bias input 
+					p--;
+				}
+				
+				for (int j = 0; j < net.length; j++) {
+					for (int g = 0; g < this.input[0].length; g++) {
+						this.gBest[p] = this.gBest[p] + this.learning * this.input[i][g] * gradients[j]; // weights input
+						p--;
+					}
+				}
+				
+				
+				/* Set de Variaveis */
+				
+				netOut = 0;
+				erro = 0;
+				p = -1;
+				z = 0;
+				gradientOut = 0;
+				
+				for (int j = 0; j < this.hiddenNeurons; j++) {
+					
+					net[j] = 0;
+					gradients[j] = 0;
+				}
+
+			//	System.out.println("------------------------------------------------------------");
+
+			}
+			
+			
+			this.erroValidate[n] = this.validate(this.inputValidate, this.outputValidate);
+			
+			erroTotal[n] = erroTotal[n] / this.input.length;
+			
+		}
+		
+		return erroTotal;
+	}
+	
+	/* Metodo de Validação */
+	public double validate(double[][] inputValidate, double[] outputValidate) {
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		double erro = 0;
+        double erroTotal = 0;  
+		double[] gradients = new double[this.hiddenNeurons]; 
+		double gradientOut = 0;
+		
+		int p = -1;
+
+		for (int i = 0; i < this.inputValidate.length; i++) {
+			for (int h = 0; h < net.length; h++) {	
+				for (int j = 0; j < this.inputValidate[0].length; j++) {
+					p++;
+					net[h] += this.gBest[p] * this.inputValidate[i][j];
+					
+				}
+			}
+			
+			for (int g = 0; g < net.length; g++) {
+				p++;
+				net[g] += this.gBest[p];
+				
+				net[g] = this.sigmoid(net[g]);
+				
+			}
+
+			for (int y = 0; y < net.length; y++) {
+				p++;
+				netOut += this.gBest[p] * net[y];	
+			}
+
+			netOut += this.gBest[p+1];
+
+			erro = (this.outputValidate[i] - netOut);
+			
+			erroTotal += Math.pow(erro, 2);
+			
+			netOut = 0;
+			p = -1;
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				net[j] = 0;
+			}
+			
+		}
+		
+		return (erroTotal/inputValidate.length);
+	}
+
+	public double[] generateMlp (double[][] inputTest, double[] outputTest){
+		
+		double[] result = new double[inputTest.length];
+		
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		
+//		double erro = 0;
+//        double erroTotal = 0;  
+//		double[] gradients = new double[this.hiddenNeurons]; 
+//		double gradientOut = 0;
+		
+//		System.out.println(result.length);
+//		System.out.println(inputTest.length);
+		
+		int p = -1;
+
+		for (int i = 0; i < inputTest.length; i++) {
+			for (int h = 0; h < net.length; h++) {	
+				for (int j = 0; j < inputTest[0].length; j++) {
+					p++;
+					net[h] += this.gBest[p] * inputTest[i][j];
+					
+				}
+			}
+			
+			for (int g = 0; g < net.length; g++) {
+				p++;
+				net[g] += this.gBest[p];
+				
+				net[g] = this.sigmoid(net[g]);
+				
+			}
+
+			for (int y = 0; y < net.length; y++) {
+				p++;
+				netOut += this.gBest[p] * net[y];	
+			}
+
+			netOut += this.gBest[p+1];
+			
+			result[i] = this.denormalize(netOut);
+			
+//			erro = (outputTest[i] - netOut);
+//			
+//			erroTotal += Math.pow(erro, 2);
+			
+			netOut = 0;
+			p = -1;
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				net[j] = 0;
+			}
+			
+		}
+		
+		return result;
+	}
+	
+	public double[] prevision (int size) {
+		double[] result = new double[size];
+		double[][] input = new double[1][this.inputTest[0].length];
+		
+		for (int i = 0; i < this.inputTest[0].length; i++) {
+			input[0][i] = this.inputTest[this.inputTest.length - 1][i];
+		} 
+		
+		double[] net = new double[this.hiddenNeurons];
+		double netOut = 0;
+		
+		double error;
+		double errorTotal = 0;
+		
+		int p = -1;
+		
+		for (int n = 0; n < result.length; n++) {
+			
+			for (int i = 0; i < input.length; i++) {
+				for (int h = 0; h < net.length; h++) {	
+					for (int j = 0; j < input[0].length; j++) {
+						p++;
+						net[h] += this.gBest[p] * input[i][j];
+						
+					}
+				}
+				
+				for (int g = 0; g < net.length; g++) {
+					p++;
+					net[g] += this.gBest[p];
+					
+					net[g] = this.sigmoid(net[g]);
+					
+				}
+
+				for (int y = 0; y < net.length; y++) {
+					p++;
+					netOut += this.gBest[p] * net[y];	
+				}
+
+				netOut += this.gBest[p+1];
+			}
+			
+			result[n] = this.denormalize(netOut);
+			
+			//input[0][0] = input[0][1];
+			input[0][input[0].length - 1] = netOut;
+
+			netOut = 0;
+			p = -1;
+			
+			for (int j = 0; j < this.hiddenNeurons; j++) {
+				net[j] = 0;
+			}
+
+		}
+
+		return result;
+	}
 }

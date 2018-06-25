@@ -10,11 +10,11 @@ public class MainPSO_Gradiente {
 		
 		Bases base = new Bases();
 
-		int epooc = 100;
+		int epooc = 150;
 		
 		//MLP_PSO_GRADIENTE(base, baseTrain, baseValidade, test, hiddenNeurons, learning, populationSize, c1, c2, window, wInertia, maxInertia, minInertia)
 		
-		MLP_PSO_GRADIENTE mlp = new MLP_PSO_GRADIENTE(base.getBaseDolar(), 0.50, 0.20, 0.30, 6, 0.01, 100, 2, 2, 1, 0.8, 0.8, 0.2);
+		MLP_PSO_GRADIENTE mlp = new MLP_PSO_GRADIENTE(base.getBaseDolar(), 0.30, 0.20, 0.50, 10, 0.01, 50, 2, 2, 1, 0.8, 0.8, 0.2);
 		mlp.start(epooc);
 		
 		
@@ -52,6 +52,7 @@ public class MainPSO_Gradiente {
 		}
 		plot2.addLinePlot("Valores Reais", y,mlp.getOutputTest());
 		plot2.addLinePlot("Previsão PSO", y,mlp.getMlpOutputPSO());
+		//plot2.addLinePlot("PREVISÕES", y,mlp.getMlpPSOGradientePrevision());
 		plot2.addLinePlot("Previsão PSO/Gradiente", y,mlp.getMlpOutputPSOGradiente());
 		JFrame frame2 = new JFrame("Previsões");
 		frame2.setContentPane(plot2);
