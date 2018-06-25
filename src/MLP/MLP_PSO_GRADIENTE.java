@@ -89,7 +89,7 @@ public class MLP_PSO_GRADIENTE {
 
 	}
 
-	/* Gerar pupulação, velocidade de ajuste e memoria inicial Aqui */
+	/* Gerar pupulação, velocidade de ajuste e memoria inicial Aqui*/
 	public void  generatePopulation () {
 		
 		for (int i = 0; i < this.particle.length; i++) {
